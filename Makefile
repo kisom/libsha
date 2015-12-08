@@ -17,9 +17,9 @@ OS =		$(shell uname -s)
 
 # TEST_LDFLAGS determines whether we can build a static binary.
 ifeq ($(OS), "Darwin")
-TEST_LDFLAGS =
+TEST_LDFLAGS = -L.
 else
-TEST_LDFLAGS =	-static
+TEST_LDFLAGS =	-static -L.
 endif
 
 .PHONY: all
@@ -48,7 +48,7 @@ $(TESTDRIVER): $(STATIC_TARGET) $(TESTOBJS)
 	$(CC) $(LDFLAGS) -o $@ $(TESTOBJS) $(STATIC_TARGET)
 
 $(TESTDRIVER2): $(SHARED_TARGET) $(TESTOBJS)
-	$(CC) $(LDFLAGS) -o $@ $(TESTOBJS) $(SHARED_TARGET)
+	$(CC) $(LDFLAGS) -o $@ $(TESTOBJS) ./$(SHARED_TARGET)
 
 
 .PHONY: clean
