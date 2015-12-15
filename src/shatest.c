@@ -44,7 +44,8 @@
 #include <string.h>
 #include <ctype.h>
 #include <unistd.h>     /* defines getopt() and optarg */
-#include "sha.h"
+
+#include <sha/sha.h>
 
 static int scasecmp(const char *s1, const char *s2);
 
@@ -864,7 +865,7 @@ static void printResult(uint8_t *Message_Digest, int hashsize,
 		}
 		putchar('\n');
 	} else if (printResults == PRINTRAW) {
-		fwrite(Message_Digest, 1, hashsize, stdout);
+		fwrite(Message_Digest, 1, (size_t)hashsize, stdout);
 	} else if (printResults == PRINTHEX) {
 		for (i = 0; i < hashsize; ++i) {
 			putchar(hexdigits[(Message_Digest[i] >> 4) & 0xF]);
@@ -877,11 +878,11 @@ static void printResult(uint8_t *Message_Digest, int hashsize,
 		    "0123456789+/";
 		for (i = 0; i < hashsize; i += 3) {
 			putchar(sm[Message_Digest[i] >> 2]);
-			b = (Message_Digest[i] & 0x03) << 4;
+			b = (unsigned char)((Message_Digest[i] & 0x03) << 4);
 			if (i+1 < hashsize) b |= Message_Digest[i+1] >> 4;
 			putchar(sm[b]);
 			if (i+1 < hashsize) {
-				b = (Message_Digest[i+1] & 0x0f) << 2;
+				b = (unsigned char)((Message_Digest[i+1] & 0x0f) << 2);
 				if (i+2 < hashsize) b |= Message_Digest[i+2] >> 6;
 				putchar(sm[b]);
 			} else putchar('=');
@@ -940,7 +941,7 @@ static int hash(int testno, int loopno, int hashno,
 		printf("ExtraBits %d: %2.2x\n", numberExtrabits, extrabits);
 	}
 
-	if (info) Message_Digest = malloc(okmlen);
+	if (info) Message_Digest = malloc((size_t)okmlen);
 	memset(&sha, '\343', sizeof(sha)); /* force bad data into struct */
 	memset(&hmac, '\343', sizeof(hmac));
 	memset(&hkdf, '\343', sizeof(hkdf));
@@ -961,7 +962,7 @@ static int hash(int testno, int loopno, int hashno,
 		    keyarray ? hmacInput(&hmac, (const uint8_t *) testarray,
 			length) :
 		    USHAInput(&sha, (const uint8_t *) testarray,
-			length);
+			(unsigned int)length);
 		if (err != shaSuccess) {
 			fprintf(stderr, "hash(): %sInput Error %d.\n",
 			    info ? "hkdf" : keyarray ? "hmac" : "sha", err);
@@ -970,11 +971,13 @@ static int hash(int testno, int loopno, int hashno,
 	}
 
 	if (numberExtrabits > 0) {
-		err = info ? hkdfFinalBits(&hkdf, extrabits, numberExtrabits) :
-		    keyarray ? hmacFinalBits(&hmac, (uint8_t) extrabits,
-			numberExtrabits) :
+		err = info ? hkdfFinalBits(&hkdf, (uint8_t)extrabits,
+		    (unsigned int)numberExtrabits) :
+		    keyarray ?
+		    hmacFinalBits(&hmac, (uint8_t) extrabits,
+			(unsigned int)numberExtrabits) :
 		    USHAFinalBits(&sha, (uint8_t) extrabits,
-			numberExtrabits);
+			(unsigned int)numberExtrabits);
 		if (err != shaSuccess) {
 			fprintf(stderr, "hash(): %sFinalBits Error %d.\n",
 			    info ? "hkdf" : keyarray ? "hmac" : "sha", err);
@@ -1112,7 +1115,7 @@ static int hashfile(int hashno, const char *hashfilename, int bits,
 		return shaStateError;
 	}
 
-	if (info) Message_Digest = malloc(okmlen);
+	if (info) Message_Digest = malloc((size_t)okmlen);
 	memset(&sha, '\343', sizeof(sha)); /* force bad data into struct */
 	memset(&hmac, '\343', sizeof(hmac));
 	memset(&hkdf, '\343', sizeof(hkdf));
@@ -1143,10 +1146,10 @@ static int hashfile(int hashno, const char *hashfilename, int bits,
 			}
 		}
 	else
-		while ((nread = fread(buf, 1, sizeof(buf), hashfp)) > 0) {
+		while ((nread = (int)fread(buf, 1, sizeof(buf), hashfp)) > 0) {
 			err = info ? hkdfInput(&hkdf, buf, nread) :
 			    keyarray ? hmacInput(&hmac, buf, nread) :
-			    USHAInput(&sha, buf, nread);
+			    USHAInput(&sha, buf, (unsigned int)nread);
 			if (err != shaSuccess) {
 				fprintf(stderr, "hashfile(): %s Error %d.\n",
 				    info ? "hkdf" : keyarray ? "hmacInput" :
@@ -1157,9 +1160,11 @@ static int hashfile(int hashno, const char *hashfilename, int bits,
 		}
 
 	if (bitcount > 0)
-		err = info ? hkdfFinalBits(&hkdf, bits, bitcount) :
-		    keyarray ? hmacFinalBits(&hmac, bits, bitcount) :
-		    USHAFinalBits(&sha, bits, bitcount);
+		err = info ? hkdfFinalBits(&hkdf, (uint8_t)bits,
+		    (unsigned int)bitcount) :
+		    keyarray ? hmacFinalBits(&hmac, (uint8_t)bits,
+			(unsigned int)bitcount) :
+		    USHAFinalBits(&sha, (uint8_t)bits, (unsigned int)bitcount);
 	if (err != shaSuccess) {
 		fprintf(stderr, "hashfile(): %s Error %d.\n",
 		    info ? "hkdf" : keyarray ? "hmacFinalBits" :
@@ -1203,7 +1208,7 @@ static void randomtest(int hashno, const char *seed, int hashsize,
 	unsigned char SEED[USHAMaxHashSize], MD[1003][USHAMaxHashSize];
 
 	/* INPUT: Seed - A random seed n bits long */
-	memcpy(SEED, seed, hashsize);
+	memcpy(SEED, seed, (size_t)hashsize);
 	if (printResults == PRINTTEXT) {
 		printf("%s random test seed= '", hashes[hashno].name);
 		printxstr(seed, hashsize);
@@ -1212,23 +1217,23 @@ static void randomtest(int hashno, const char *seed, int hashsize,
 
 	for (j = 0; j < randomcount; j++) {
 		/* MD0 = MD1 = MD2 = Seed; */
-		memcpy(MD[0], SEED, hashsize);
-		memcpy(MD[1], SEED, hashsize);
-		memcpy(MD[2], SEED, hashsize);
+		memcpy(MD[0], SEED, (size_t)hashsize);
+		memcpy(MD[1], SEED, (size_t)hashsize);
+		memcpy(MD[2], SEED, (size_t)hashsize);
 		for (i=3; i<1003; i++) {
 			/* Mi = MDi-3 || MDi-2 || MDi-1; */
 			USHAContext Mi;
 			memset(&Mi, '\343', sizeof(Mi)); /* force bad data into struct */
 			USHAReset(&Mi, hashes[hashno].whichSha);
-			USHAInput(&Mi, MD[i-3], hashsize);
-			USHAInput(&Mi, MD[i-2], hashsize);
-			USHAInput(&Mi, MD[i-1], hashsize);
+			USHAInput(&Mi, MD[i-3], (unsigned int)hashsize);
+			USHAInput(&Mi, MD[i-2], (unsigned int)hashsize);
+			USHAInput(&Mi, MD[i-1], (unsigned int)hashsize);
 			/* MDi = SHA(Mi); */
 			USHAResult(&Mi, MD[i]);
 		}
 
 		/* MDj = Seed = MDi; */
-		memcpy(SEED, MD[i-1], hashsize);
+		memcpy(SEED, MD[i-1], (size_t)hashsize);
 
 		/* OUTPUT: MDj */
 		sprintf(buf, "%d", j);
@@ -1270,7 +1275,7 @@ static void testErrors(int hashnolow, int hashnohigh, int printResults,
 
 	for (hashno = hashnolow; hashno <= hashnohigh; hashno++) {
 		memset(&usha, '\343', sizeof(usha)); /* force bad data */
-		USHAReset(&usha, hashno);
+		USHAReset(&usha, (unsigned int)hashno);
 		USHAResult(&usha, Message_Digest);
 		err = USHAInput(&usha, (const unsigned char *)"foo", 3);
 		if (printResults == PRINTTEXT)
@@ -1373,25 +1378,27 @@ int main(int argc, char **argv)
 	while ((i = getopt(argc, argv,
 	    "6b:B:def:F:h:i:Hk:l:L:mpPr:R:s:S:t:wxX")) != -1)
 		switch (i) {
-		case 'b': extrabits = strtol(optarg, 0, 0); break;
+		case 'b': extrabits = (int)strtol(optarg, 0, 0); break;
 		case 'B': numberExtrabits = atoi(optarg); break;
 		case 'd': runHkdfTests = 1; break;
 		case 'e': checkErrors = 1; break;
 		case 'f': hashfilename = optarg; break;
 		case 'F': hashFilename = optarg; break;
 		case 'h': hashnolow = hashnohigh = findhash(argv[0], optarg);
-			break;
+			  break;
 		case 'H': strIsHex = 1; break;
-		case 'i': info = optarg; infolen = strlen(optarg); break;
-		case 'k': hmacKey = optarg; hmaclen = strlen(optarg); break;
+		case 'i': info = optarg; infolen = (int)strlen(optarg); break;
+		case 'k': hmacKey = optarg; hmaclen = (int)strlen(optarg);
+			  break;
 		case 'l': loopnohigh = atoi(optarg); break;
-		case 'L': okmlen = strtol(optarg, 0, 0); break;
+		case 'L': okmlen = (int)strtol(optarg, 0, 0); break;
 		case 'm': runHmacTests = 1; break;
 		case 'P': printPassFail = 0; break;
 		case 'p': printResults = PRINTNONE; break;
 		case 'R': randomcount = atoi(optarg); break;
 		case 'r': randomseedstr = optarg; break;
-		case 's': hashstr = optarg; hashlen = strlen(hashstr); break;
+		case 's': hashstr = optarg; hashlen = (int)strlen(hashstr);
+			  break;
 		case 'S': resultstr = optarg; break;
 		case 't': testnolow = ntestnohigh = atoi(optarg) - 1; break;
 		case 'w': printResults = PRINTRAW; break;
@@ -1530,8 +1537,8 @@ int main(int argc, char **argv)
 int scasecmp(const char *s1, const char *s2)
 {
 	for (;;) {
-		char u1 = tolower((int)(unsigned char)(*s1++));
-		char u2 = tolower((int)(unsigned char)(*s2++));
+		char u1 = (char)tolower((int)(unsigned char)(*s1++));
+		char u2 = (char)tolower((int)(unsigned char)(*s2++));
 		if (u1 != u2)
 			return u1 - u2;
 		if (u1 == '\0')

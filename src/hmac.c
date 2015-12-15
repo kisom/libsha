@@ -11,7 +11,8 @@
  *      the various SHA algorithms.
  */
 
-#include "sha.h"
+#include <stdlib.h>
+#include <sha/sha.h>
 
 /*
  *  hmac
@@ -99,7 +100,7 @@ int hmacReset(HMACContext *context, enum SHAversion whichSha,
 	if (key_len > blocksize) {
 		USHAContext tcontext;
 		int err = USHAReset(&tcontext, whichSha) ||
-		    USHAInput(&tcontext, key, key_len) ||
+		    USHAInput(&tcontext, key, (unsigned int)key_len) ||
 		    USHAResult(&tcontext, tempkey);
 		if (err != shaSuccess) return err;
 
@@ -134,7 +135,7 @@ int hmacReset(HMACContext *context, enum SHAversion whichSha,
 	ret = USHAReset(&context->shaContext, whichSha) ||
 
 	    /* and start with inner pad */
-	    USHAInput(&context->shaContext, k_ipad, blocksize);
+	    USHAInput(&context->shaContext, k_ipad, (unsigned int)blocksize);
 	return context->Corrupted = ret;
 }
 
@@ -166,7 +167,7 @@ int hmacInput(HMACContext *context, const unsigned char *text,
 	if (context->Computed) return context->Corrupted = shaStateError;
 	/* then text of datagram */
 	return context->Corrupted =
-	    USHAInput(&context->shaContext, text, text_len);
+	    USHAInput(&context->shaContext, text, (unsigned int)text_len);
 }
 
 /*
@@ -232,14 +233,14 @@ int hmacResult(HMACContext *context, uint8_t *digest)
 
 	    /* perform outer SHA */
 	    /* init context for 2nd pass */
-	    USHAReset(&context->shaContext, context->whichSha) ||
+	    USHAReset(&context->shaContext, (unsigned int)context->whichSha) ||
 
 	    /* start with outer pad */
 	    USHAInput(&context->shaContext, context->k_opad,
-		context->blockSize) ||
+		(unsigned int)context->blockSize) ||
 
 	    /* then results of 1st hash */
-	    USHAInput(&context->shaContext, digest, context->hashSize) ||
+	    USHAInput(&context->shaContext, digest, (unsigned int)context->hashSize) ||
 	    /* finish up 2nd pass */
 	    USHAResult(&context->shaContext, digest);
 

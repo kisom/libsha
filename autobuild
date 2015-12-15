@@ -1,0 +1,5 @@
+#!/bin/sh
+
+[ -e ./configure ] && make distclean
+[ -d m4 ] || mkdir m4
+./autogen && ./configure CC=clang && make && make check

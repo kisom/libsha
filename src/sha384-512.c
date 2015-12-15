@@ -43,7 +43,7 @@
  *
  */
 
-#include "sha.h"
+#include <sha/sha.h>
 
 #ifdef USE_32BIT_ONLY
 /*
@@ -273,7 +273,7 @@ static uint32_t SHA512_H0[SHA512HashSize/4] = {
 
 #else /* !USE_32BIT_ONLY */
 
-#include "sha-private.h"
+#include <sha/sha-private.h>
 
 /* Define the SHA shift, rotate left and rotate right macros */
 #define SHA512_SHR(bits,word)  (((uint64_t)(word)) >> (bits))

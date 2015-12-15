@@ -1,5 +1,9 @@
 /************************ sha-private.h ************************/
 /***************** See RFC 6234 for details. *******************/
+#ifndef _SHA_H_
+#error "sha-private.h should not be included directly."
+#endif
+
 #ifndef _SHA_PRIVATE__H
 #define _SHA_PRIVATE__H
 /*

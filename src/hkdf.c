@@ -11,9 +11,11 @@
  *      expressed in terms of the various SHA algorithms.
  */
 
-#include "sha.h"
 #include <string.h>
 #include <stdlib.h>
+
+#include <sha/sha.h>
+
 
 /*
  *  hkdf
@@ -101,7 +103,7 @@ int hkdfExtract(SHAversion whichSha,
 	if (salt == 0) {
 		salt = nullSalt;
 		salt_len = USHAHashSize(whichSha);
-		memset(nullSalt, '\0', salt_len);
+		memset(nullSalt, '\0', (size_t)salt_len);
 	} else if (salt_len < 0) {
 		return shaBadParam;
 	}
@@ -168,7 +170,7 @@ int hkdfExpand(SHAversion whichSha, const uint8_t prk[ ], int prk_len,
 	where = 0;
 	for (i = 1; i <= N; i++) {
 		HMACContext context;
-		unsigned char c = i;
+		unsigned char c = (unsigned char)i;
 		int ret = hmacReset(&context, whichSha, prk, prk_len) ||
 		    hmacInput(&context, T, Tlen) ||
 		    hmacInput(&context, info, info_len) ||
@@ -176,7 +178,7 @@ int hkdfExpand(SHAversion whichSha, const uint8_t prk[ ], int prk_len,
 		    hmacResult(&context, T);
 		if (ret != shaSuccess) return ret;
 		memcpy(okm + where, T,
-		    (i != N) ? hash_len : (okm_len - where));
+		    (i != N) ? (size_t)hash_len : (size_t)(okm_len - where));
 		where += hash_len;
 		Tlen = hash_len;
 	}
@@ -218,7 +220,7 @@ int hkdfReset(HKDFContext *context, enum SHAversion whichSha,
 	if (salt == 0) {
 		salt = nullSalt;
 		salt_len = context->hashSize;
-		memset(nullSalt, '\0', salt_len);
+		memset(nullSalt, '\0', (size_t)salt_len);
 	}
 
 	return hmacReset(&context->hmacContext, whichSha, salt, salt_len);
@@ -327,8 +329,8 @@ int hkdfResult(HKDFContext *context,
 	if (!prk) prk = prkbuf;
 
 	ret = hmacResult(&context->hmacContext, prk) ||
-	    hkdfExpand(context->whichSha, prk, context->hashSize, info,
-		info_len, okm, okm_len);
+	    hkdfExpand((unsigned int)context->whichSha, prk, context->hashSize,
+		info, info_len, okm, okm_len);
 	context->Computed = 1;
 	return context->Corrupted = ret;
 }

@@ -9,7 +9,7 @@
  *     This file implements a unified interface to the SHA algorithms.
  */
 
-#include "sha.h"
+#include <sha/sha.h>
 
 /*
  *  USHAReset

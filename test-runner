@@ -1,0 +1,8 @@
+#!/bin/sh
+
+./src/shatest -m -k deadbeefdeadbeef -d -l 100 -p -e -R 1000
+./src/shatest -h0 -l 100 -p -e -R 1000
+./src/shatest -h1 -l 100 -p -e -R 1000
+./src/shatest -h2 -l 100 -p -e -R 1000
+./src/shatest -h3 -l 100 -p -e -R 1000
+./src/shatest -h4 -l 100 -p -e -R 1000

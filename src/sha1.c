@@ -36,8 +36,9 @@
  *      the input.
  */
 
-#include "sha.h"
-#include "sha-private.h"
+
+#include <sha/sha.h>
+#include <sha/sha-private.h>
 
 /*
  *  Define the SHA1 circular left shift macro
